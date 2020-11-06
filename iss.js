@@ -1,5 +1,6 @@
 // ---------------- External modules and aliases ---------------------
 const request = require('request');
+const { log } = console;
 
 
 // ---------------------- Get IP-address via API ---------------------
@@ -100,4 +101,43 @@ const fetchISSFlyOverTimes = function(coords, callback) {
   });
 };
 
-module.exports = { fetchMyIP, fetchCoordsByIP, fetchISSFlyOverTimes };
+
+/**
+ * Orchestrates multiple API requests in order to determine the next
+ * 5 upcoming ISS fly overs for the user's current location.
+ * Input:
+ *   - A callback with an error or results.
+ * Returns (via Callback):
+ *   - An error, if any (nullable)
+ *   - The fly-over times as an array (null if error):
+ *     [ { risetime: <number>, duration: <number> }, ... ]
+ */
+// ---------- Get desired output of timed ISS flies overhead ----------
+const nextISSTimesForMyLocation = function(callback) {
+
+  // -------- Get IP-address --------
+  let ip = '';
+  fetchMyIP((err, data) => {
+    if (err) log(err); // Error
+    ip = data;         // Set IP
+  
+    // ------- Get coordinates ----------
+    let coords = {};
+    fetchCoordsByIP(ip, (err, data) => {
+      if (err) log(err); // Error
+      coords = data;
+  
+      // ----------- Get info about ISS flying overhead
+      let overhead = {};
+      fetchISSFlyOverTimes(coords, (err, data) => {
+        if (err) log(err);  // Error
+        overhead = data;
+  
+        // ----------- Print formatted output --------------
+        callback(overhead);
+      });
+    });
+  });
+};
+
+module.exports = { nextISSTimesForMyLocation };
